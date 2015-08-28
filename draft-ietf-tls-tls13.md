@@ -108,6 +108,7 @@ informative:
   RFC5705:
   RFC5763:
   RFC6176:
+  RFC7250:
   RFC7465:
   RFC7507:
   RFC7568:
@@ -3597,31 +3598,43 @@ Note: In the case of the CCM mode of AES, two variations exist: "CCM_8" which
 uses an 8-bit authentication tag and "CCM" which uses a 16-bit authentication
 tag. Both use the default hash, SHA-256.
 
-In addition to authenticated cipher suites, completely anonymous Diffie-Hellman
-cipher suites exist to provide communications in which neither party is
-authenticated. This mode is vulnerable to man-in-the-middle attacks and is
-therefore unsafe for general use. These cipher suites MUST NOT be used by TLS
-implementations unless the application layer has specifically requested to allow
-anonymous key exchange. Anonymous key exchange may sometimes be acceptable, for
-example, to support opportunistic encryption when no set-up for authentication is
-in place, or when TLS is used as part of more complex security protocols that have
-other means to ensure authentication. The following specifications provide "DH_anon"
-key exchange cipher suites:
-AES-GCM [RFC5288], ARIA-GCM [RFC6209], and CAMELLIA-GCM [RFC6367].
-
 All cipher suites in this section are specified for use with both TLS 1.2
 and TLS 1.3, as well as the corresponding versions of DTLS.
 (see {{backward-compatibility}})
 
-Note that using non-anonymous key exchange without actually verifying the key
-exchange is essentially equivalent to anonymous key exchange, and the same
-precautions apply. While non-anonymous key exchange will generally involve a
-higher computational and communicational cost than anonymous key exchange, it
-may be in the interest of interoperability not to disable non-anonymous key
-exchange when the application layer is allowing anonymous key exchange.
-
 New cipher suite values are assigned by IANA as described in
 {{iana-considerations}}.
+
+### Unauthenticated Cipher Suites
+
+All unauthenticated connections MUST NOT be offered or negotiated unless the
+application layer has explicitly requested so, as they are vulnerable to
+man-in-the-middle attacks and unsafe for general use. This includes anonymous
+cipher suites as well as trust on first use connections via authenticatable
+cipher suites.
+
+Endpoints needing to negotiate unauthenticated connections SHOULD use raw
+public keys which are exchanged and temporarily trusted on first connection.
+(see {{RFC7250}}) Another OPTIONAL method to negotiate unauthenticated
+connections is to use a standard ECDHE_ECDSA cipher suite, but without
+validation of the certificate chain or any of its contents. These
+procedures provide an unauthenticated connection with a certificate which
+SHOULD be used to verify that subsequent connection attempts are to the
+same peer. Note that using non-anonymous key exchange without actually
+verifying the key exchange is essentially equivalent to anonymous key
+exchange, and the same risks apply.
+
+Unauthenticated connections may sometimes be acceptable, for example, to
+support opportunistic encryption when no set-up for authentication is in place,
+or when TLS is used as part of more complex security protocols that have other
+means to ensure authentication. While non-anonymous key exchange will
+generally involve a higher computational and communicational cost than
+anonymous key exchange, it is likely in the interest of interoperability to not
+disable non-anonymous key exchange when the application layer is allowing
+anonymous key exchange.
+
+The following specifications provide "DH_anon" key exchange cipher suites:
+AES-GCM [RFC5288], ARIA-GCM [RFC6209], and CAMELLIA-GCM [RFC6367].
 
 
 ## The Security Parameters
