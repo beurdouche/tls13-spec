@@ -2697,9 +2697,9 @@ When this message will be sent:
 
 > The server MUST send a Certificate message whenever the agreed-upon
 key exchange method uses certificates for authentication (this
-includes all key exchange methods defined in this document except
-DH_anon and PSK). This message will
-always immediately follow the EncryptedExtensions message.
+includes all key exchange methods defined in this document except PSK).
+This message will always immediately follow the EncryptedExtensions 
+message.
 
 Meaning of this message:
 
@@ -3633,9 +3633,6 @@ anonymous key exchange, it is likely in the interest of interoperability to not
 disable non-anonymous key exchange when the application layer is allowing
 anonymous key exchange.
 
-The following specifications provide "DH_anon" key exchange cipher suites:
-AES-GCM [RFC5288], ARIA-GCM [RFC6209], and CAMELLIA-GCM [RFC6367].
-
 
 ## The Security Parameters
 
@@ -3704,11 +3701,10 @@ Users should be able to view information about the certificate and root CA.
 
 TLS supports a range of key sizes and security levels, including some that
 provide no or minimal security. A proper implementation will probably not
-support many cipher suites. For instance, anonymous Diffie-Hellman is strongly
-discouraged because it cannot prevent man-in-the-middle attacks. Applications
-should also enforce minimum and maximum key sizes. For example, certificate
-chains containing keys or signatures weaker than 2048-bit RSA or 224-bit ECDSA
-are not appropriate for secure applications.
+support many cipher suites. Applications should also enforce minimum and
+maximum key sizes. For example, certificate chains containing keys or
+signatures weaker than 2048-bit RSA or 224-bit ECDSA are not appropriate
+for secure applications.
 See also {{backwards-compatibility-security-restrictions}}.
 
 
@@ -3917,9 +3913,9 @@ that they know the correct master_secret.
 
 ####  Anonymous Key Exchange
 
-Completely anonymous sessions can be established using Diffie-Hellman for key
-exchange. The server's public parameters are contained in the server key
-share message, and the client's are sent in the client key share message.
+Completely anonymous sessions can be established using anonymous key exchanges. 
+The server's public parameters are contained in the ServerKeyShare 
+message, and the client's are sent in the ClientKeyShare message.
 Eavesdroppers who do not know the private values should not be able to find the
 Diffie-Hellman result.
 
