@@ -4519,8 +4519,10 @@ Archives of the list can be found at:
 * David Benjamin \\
   Google \\
   davidben@google.com
-  
-* Benjamin Beurdouche
+
+* Benjamin Beurdouche \\
+  INRIA & Microsoft Research \\
+  benjamin.beurdouche@inria.fr
 
 * Karthikeyan Bhargavan (co-author of [RFC7627]) \\
   INRIA \\
@@ -4582,7 +4584,6 @@ Archives of the list can be found at:
 * David Hopwood \\
   Independent Consultant \\
   david.hopwood@blueyonder.co.uk
-
 
 * Subodh Iyengar \\
   Facebook \\
