@@ -1747,7 +1747,6 @@ it MUST abort the handshake with either
 a "handshake_failure" or "insufficient_security" fatal alert
 (see {{alert-protocol}}).
 
-
 ###  Client Hello
 
 When a client first connects to a server, it is REQUIRED to send the
@@ -1886,9 +1885,9 @@ is in use, the client may transmit early application data
 
 ### Server Hello {#server-hello}
 
-The server will send this message in response to a ClientHello message if it is
-able to find an acceptable set of parameters and the ClientHello contains
-sufficient information to proceed with the handshake.
+The server will send this message to proceed with the handshake
+in response to a ClientHello message if it is able to find sufficient
+information and an acceptable set of parameters within the ClientHello content.
 
 Structure of this message:
 
@@ -1921,7 +1920,8 @@ random
 cipher_suite
 : The single cipher suite selected by the server from the list in
   ClientHello.cipher_suites. A client which receives a cipher suite
-  that was not offered MUST abort the handshake.
+  that was not offered MUST abort the handshake with an "illegal_parameter"
+  alert.
 
 extensions
 : A list of extensions.  The ServerHello MUST only include extensions
@@ -1929,6 +1929,8 @@ extensions
   the only such extensions are "key_share" and "pre_shared_key".
   All current TLS 1.3 ServerHello messages will contain one of these
   two extensions, or both when using a PSK with (EC)DHE key establishment.
+  The remaining extensions are sent separately in the EncryptedExtensions
+  message.
 {:br }
 
 TLS 1.3 has a downgrade protection mechanism embedded in the server's
@@ -1948,13 +1950,13 @@ bytes:
       44 4F 57 4E 47 52 44 00
 
 
-TLS 1.3 clients receiving a TLS 1.2 or below ServerHello MUST check
-that the last eight bytes are not equal to either of these values.
+TLS 1.3 clients receiving a ServerHello indicating TLS 1.2 or below
+MUST check that the last eight bytes are not equal to either of these values.
 TLS 1.2 clients SHOULD also check that the last eight bytes are not
 equal to the second value if the ServerHello indicates TLS 1.1 or
 below.  If a match is found, the client MUST abort the handshake
 with an "illegal_parameter" alert.  This mechanism provides limited
-protection against downgrade attacks over and above that provided
+protection against downgrade attacks over and above what is provided
 by the Finished exchange: because the ServerKeyExchange, a message
 present in TLS 1.2 and below, includes a signature over both random
 values, it is not possible for an active attacker to modify the
@@ -1964,10 +1966,9 @@ It does not provide downgrade protection when static RSA is used.
 Note: This is a change from {{RFC5246}}, so in practice many TLS 1.2 clients
 and servers will not behave as specified above.
 
-A client that receives a TLS 1.3 ServerHello during renegotiation
-MUST abort the handshake with a "protocol_version" alert.  Note that
-renegotiation is only possible when a version of TLS prior to 1.3 has
-been negotiated.
+A legacy TLS client expecting to use renegotiation for TLS 1.2 or prior
+after a previous handshake and receiving a TLS 1.3 ServerHello during renegotiation
+MUST abort the handshake with a "protocol_version" alert.
 
 RFC EDITOR: PLEASE REMOVE THE FOLLOWING PARAGRAPH
 Implementations of draft versions (see {{draft-version-indicator}}) of this
