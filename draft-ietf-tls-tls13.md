@@ -513,16 +513,20 @@ The primary goal of TLS is to provide a secure channel
 between two communicating peers. Specifically, the channel should
 provide the following properties:
 
-- Authentication: The server side of the channel is always
+- Authentication: The server side of the secure channel is always
   authenticated; the client side is optionally
   authenticated. Authentication can happen via asymmetric cryptography
   (e.g., RSA {{RSA}}, ECDSA {{ECDSA}}) or a pre-shared key (PSK).
 
-- Confidentiality: Data sent over the channel is only visible to the
-  endpoints. TLS does not hide the length of the data it transmits,
-  though endpoints are able to pad in order to obscure lengths.
+// BB: EdDSA ?
 
-- Integrity: Data sent over the channel cannot be modified by attackers.
+- Confidentiality: Data sent through the channel after establishment
+  is only visible to the
+  endpoints. TLS does not hide the length of the data it transmits,
+  though endpoints are able to pad the TLS records in order to obscure lengths
+  and improve protection agains traffic analysis techniques.
+
+- Integrity: Data sent over the secure channel cannot be modified by attackers.
 
 These properties should be true even in the face of an attacker who has complete
 control of the network, as described in {{?RFC3552}}.
@@ -546,15 +550,16 @@ TLS consists of two primary components:
 
 TLS is application protocol independent; higher-level protocols can
 layer on top of TLS transparently. The TLS standard, however, does not
-specify how protocols add security with TLS; how to
-initiate TLS handshaking and how to interpret the authentication
-certificates exchanged are left to the judgment of the designers and
+specify how protocols add security with TLS, neither how to
+initiate TLS handshaking through library specific APIs. Aditionnaly,
+the protocol does not describe how to interpret the authentication
+certificates exchanged as it is left to the judgment of the designers and
 implementors of protocols that run on top of TLS.
 
 This document defines TLS version 1.3. While TLS 1.3 is not directly
 compatible with previous versions, all versions of TLS incorporate a
 versioning mechanism which allows clients and servers to interoperably
-negotiate a common version if one is supported.
+negotiate a common version if one is supported by both peers.
 
 This document supersedes and obsoletes previous versions of TLS
 including version 1.2 {{RFC5246}}.  It also obsoletes the TLS ticket
@@ -992,6 +997,9 @@ are many minor differences.
 - A Zero-RTT mode was added, saving a round-trip at connection setup for
   some application data, at the cost of certain security properties.
 
+- The forward secrecy security property has become mandatory for the
+  main 1-RTT mode except when using a PSK only key exchange mechanism.
+
 - All handshake messages after the ServerHello are now encrypted. The
   newly introduced EncryptedExtension message allows various extensions
   previously sent in clear in the ServerHello to also enjoy
@@ -1045,12 +1053,14 @@ referenced sections for more details.
 
 # Protocol Overview
 
-The cryptographic parameters of the connection state are produced by the
-TLS handshake protocol, which a TLS client and server use when first
-communicating to agree on a protocol version, select cryptographic
-algorithms, optionally authenticate each other, and establish shared
-secret keying material. Once the handshake is complete, the peers
-use the established keys to protect application layer traffic.
+The cryptographic parameters used by the secure channel are produced by the
+TLS handshake protocol. This sub-protocol of TLS is used by the client
+and server when first communicating with each other.
+The handshake protocol leads peers to negociate a protocol version,
+select cryptographic algorithms, optionally authenticate each other,
+and establish shared secret keying material.
+Once the handshake is complete, the peers use the established keys
+to protect the application layer traffic.
 
 A failure of the handshake or other protocol error triggers the
 termination of the connection, optionally preceded by an alert message
@@ -1058,10 +1068,9 @@ termination of the connection, optionally preceded by an alert message
 
 TLS supports three basic key exchange modes:
 
-- (EC)DHE (Diffie-Hellman, both the finite field and elliptic curve
-  varieties),
+- (EC)DHE (Diffie-Hellman using finite fields or elliptic curve)
 
-- PSK-only, and
+- PSK-only
 
 - PSK with (EC)DHE
 
@@ -1119,10 +1128,10 @@ in the diagram above):
 In the Key Exchange phase, the client sends the ClientHello
 ({{client-hello}}) message, which contains a random nonce
 (ClientHello.random); its offered protocol versions; a list of
-symmetric cipher/HKDF hash pairs; some set of Diffie-Hellman key shares (in the
+symmetric cipher/HKDF hash pairs; either a set of Diffie-Hellman key shares (in the
 "key_share" extension {{key-share}}), a set of pre-shared key labels (in the
 "pre_shared_key" extension {{pre-shared-key-extension}}) or both; and
-potentially some other extensions.
+potentially additionnal extensions.
 
 The server processes the ClientHello and determines the appropriate
 cryptographic parameters for the connection. It then responds with its
@@ -1181,11 +1190,14 @@ Finished:
 Upon receiving the server's messages, the client responds with its Authentication
 messages, namely Certificate and CertificateVerify (if requested), and Finished.
 
-At this point, the handshake is complete, and the client and server may exchange
-application-layer data. Application data MUST NOT be sent prior to sending the
-Finished message. Note that while the server may send application data
-prior to receiving the client's Authentication messages, any data sent at
-that point is, of course, being sent to an unauthenticated peer.
+At this point, the handshake is complete, and the client and server must
+derive the keying material required by the record layer to exchange
+application-layer data protected through authenticated encryption.
+Application data MUST NOT be sent prior to sending the Finished message and
+until the record layer starts using encryption keys.
+Note that while the server may send application data prior to receiving
+the client's Authentication messages, any data sent at that point is,
+of course, being sent to an unauthenticated peer.
 
 ## Incorrect DHE Share
 
@@ -1194,8 +1206,9 @@ includes only DHE or ECDHE groups unacceptable to or unsupported by the
 server), the server corrects the mismatch with a HelloRetryRequest and
 the client needs to restart the handshake with an appropriate
 "key_share" extension, as shown in Figure 2.
-If no common cryptographic parameters can be negotiated,
-the server MUST abort the handshake with an appropriate alert.
+If no common cryptographic parameters can be negotiated after the second
+ClientHello message is sent, then the server MUST abort the handshake
+with an appropriate alert.
 
 ~~~
          Client                                               Server
@@ -1226,7 +1239,6 @@ Note: The handshake transcript includes the initial
 ClientHello/HelloRetryRequest exchange; it is not reset with the new
 ClientHello.
 
-
 TLS also allows several optimized variants of the basic handshake, as
 described in the following sections.
 
@@ -1235,20 +1247,19 @@ described in the following sections.
 Although TLS PSKs can be established out of band,
 PSKs can also be established in a previous connection and
 then reused ("session resumption"). Once a handshake has completed, the server can
-send the client a PSK identity that corresponds to a key derived from
+send to the client a PSK identity that corresponds to a unique key derived from
 the initial handshake (see {{NSTMessage}}). The client
-can then use that PSK identity in future handshakes to negotiate use
-of the PSK. If the server accepts it, then the security context of the
-new connection is tied to the original connection and the key derived
+can then use that PSK identity in future handshakes to negotiate the use
+of the associated PSK. If the server accepts it, then the security context of the
+new connection is cryptographically tied to the original connection and the key derived
 from the initial handshake is used to bootstrap the cryptographic state
-instead of a full handshake. In TLS 1.2 and
-below, this functionality was provided by "session IDs" and
-"session tickets" {{RFC5077}}. Both mechanisms are obsoleted in TLS
-1.3.
+instead of a full handshake.
+In TLS 1.2 and before, this functionality was provided by "session IDs" and
+"session tickets" {{RFC5077}}. Both mechanisms are obsoleted in TLS 1.3.
 
 PSKs can be used with (EC)DHE key exchange in order to provide forward
 secrecy in combination with shared keys, or can be used alone, at the
-cost of losing forward secrecy.
+cost of losing the forward secrecy property for the application data.
 
 {{tls-resumption-psk}} shows a pair of handshakes in which the first establishes
 a PSK and the second uses it:
