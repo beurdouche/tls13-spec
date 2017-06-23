@@ -1056,7 +1056,7 @@ referenced sections for more details.
 The cryptographic parameters used by the secure channel are produced by the
 TLS handshake protocol. This sub-protocol of TLS is used by the client
 and server when first communicating with each other.
-The handshake protocol leads peers to negociate a protocol version,
+The handshake protocol leads peers to negotiate a protocol version,
 select cryptographic algorithms, optionally authenticate each other,
 and establish shared secret keying material.
 Once the handshake is complete, the peers use the established keys
@@ -1626,7 +1626,7 @@ For example:
 
 # Handshake Protocol
 
-The handshake protocol is used to negotiate the secure attributes
+The handshake protocol is used to negotiate the security parameters
 of a connection. Handshake messages are supplied to the TLS record layer, where
 they are encapsulated within one or more TLSPlaintext or TLSCiphertext structures, which are
 processed and transmitted as specified by the current active connection state.
@@ -1673,25 +1673,23 @@ processed and transmitted as specified by the current active connection state.
        } Handshake;
 
 Protocol messages MUST be sent in the order defined in
-{{the-transcript-hash}} and
-shown in the diagrams in {{protocol-overview}}.
+{{the-transcript-hash}} and shown in the diagrams in {{protocol-overview}}.
 A peer which receives a handshake message in an unexpected order
 MUST abort the handshake with an "unexpected_message" alert.
-However, unneeded handshake messages are omitted.
 
 New handshake message types are assigned by IANA as described in
 {{iana-considerations}}.
 
 ## Key Exchange Messages
 
-The key exchange messages are used to exchange security capabilities
-between the client and server and to establish the traffic keys used to protect
-the handshake and data.
+The key exchange messages are used to determine the security capabilities
+of the client and the server and to establish shared secrets including
+the traffic keys used to protect the rest of the handshake and the data.
 
 
 ### Cryptographic Negotiation
 
-TLS cryptographic negotiation proceeds by the client offering the
+In TLS, the cryptographic negotiation proceeds by the client offering the
 following four sets of options in its ClientHello:
 
 - A list of cipher suites which indicates the AEAD algorithm/HKDF hash
@@ -1707,24 +1705,24 @@ following four sets of options in its ClientHello:
   extension which indicates the key exchange modes that may be used
   with PSKs.
 
+If the server selects an (EC)DHE group and the client did not offer a
+compatible "key_share" extension in the initial ClientHello, the server MUST
+respond with a HelloRetryRequest ({{hello-retry-request}}) message.
+
 If the server does not select a PSK, then the first three of these
 options are entirely orthogonal: the server independently selects a
 cipher suite, an (EC)DHE group and key share for key establishment,
 and a signature algorithm/certificate pair to authenticate itself to
 the client. If there is no overlap between the received "supported_groups"
-and the groups supported by the server then the server MUST
-abort the handshake.
+and the groups supported by the server then the server MUST abort the
+handshake with a "handshake_failure" or an "insufficient_security" alert.
 
 If the server selects a PSK, then it MUST also select a key
 establishment mode from the set indicated by client's
-"psk_key_exchange_modes" extension (at present, PSK alone or with (EC)DHE). Note
-that if the PSK can be used without (EC)DHE then non-overlap in the
-"supported_groups" parameters need not be fatal, as it is in the
+"psk_key_exchange_modes" extension (PSK alone or with (EC)DHE). Note
+that if the PSK is used with (EC)DHE then non-overlap in the
+"supported_groups" parameters MUST be fatal as it is in the
 non-PSK case discussed in the previous paragraph.
-
-If the server selects an (EC)DHE group and the client did not offer a
-compatible "key_share" extension in the initial ClientHello, the server MUST
-respond with a HelloRetryRequest ({{hello-retry-request}}) message.
 
 If the server successfully selects parameters and does not require a
 HelloRetryRequest, it indicates the selected parameters in the ServerHello as
@@ -1736,8 +1734,9 @@ follows:
 authentication are always used.
 - When (EC)DHE is in use, the server will also provide a
 "key_share" extension.
-- When authenticating via a certificate, the server will send the Certificate ({{certificate}}) and
-CertificateVerify ({{certificate-verify}}) messages. In TLS 1.3
+- When authenticating via a certificate, the server will send
+the Certificate ({{certificate}}) and CertificateVerify
+({{certificate-verify}}) messages. In TLS 1.3
 as defined by this document, either a PSK or a certificate
 is always used, but not both. Future documents may define how to use them
 together.
@@ -1775,7 +1774,7 @@ ClientHello (without modification) except:
 
 Because TLS 1.3 forbids renegotiation, if a server has negotiated TLS
 1.3 and receives a ClientHello at any other time, it MUST terminate
-the connection.
+the connection with an "unexpected_message" alert.
 
 If a server established a TLS connection with a previous version of TLS
 and receives a TLS 1.3 ClientHello in a renegotiation, it MUST retain the
@@ -1828,9 +1827,9 @@ cipher_suites
 : This is a list of the symmetric cipher options supported by the
   client, specifically the record protection algorithm (including
   secret key length) and a hash to be used with HKDF, in descending
-  order of client preference. If the list contains cipher suites
-  the server does not recognize, support, or wish to use, the server
-  MUST ignore those cipher suites, and process the remaining ones as
+  order of client preference. If the list contains cipher suites that
+  the server does not recognize, support or wish to use, the server
+  MUST ignore those cipher suites and process the remaining ones as
   usual. Values are defined in {{cipher-suites}}. If the client is
   attempting a PSK key establishment, it SHOULD advertise at least one
   cipher suite indicating a Hash associated with the PSK.
@@ -1858,11 +1857,11 @@ extensions
   Servers MUST ignore unrecognized extensions.
 {:br }
 
-All versions of TLS allow extensions to optionally follow the
-compression_methods field as an extensions field. TLS 1.3 ClientHello
-messages always contain extensions (minimally, "supported_versions", or
-they will be interpreted as TLS 1.2 ClientHello messages), however
-TLS 1.3 servers might receive ClientHello messages without an
+All versions of TLS allow an extensions field to optionally follow the
+compression_methods field. TLS 1.3 ClientHello
+messages always contain extensions (minimally "supported_versions", otherwise
+they will be interpreted as TLS 1.2 ClientHello messages).
+TLS 1.3 servers however might receive ClientHello messages without an
 extensions field from prior versions of TLS.
 The presence of extensions can be detected by determining whether there
 are bytes following the compression_methods field at the end of the
@@ -1878,8 +1877,7 @@ or that it contains a valid extensions block with no data following.
 If not, then it MUST abort the handshake with a "decode_error" alert.
 
 In the event that a client requests additional functionality using
-extensions, and this functionality is not supplied by the server, the
-client MAY abort the handshake.
+extensions not supplied by the server, the client MAY abort the handshake.
 
 After sending the ClientHello message, the client waits for a ServerHello
 or HelloRetryRequest message. If early data
