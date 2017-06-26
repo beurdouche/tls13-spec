@@ -516,9 +516,7 @@ provide the following properties:
 - Authentication: The server side of the secure channel is always
   authenticated; the client side is optionally
   authenticated. Authentication can happen via asymmetric cryptography
-  (e.g., RSA {{RSA}}, ECDSA {{ECDSA}}) or a pre-shared key (PSK).
-
-// BB: EdDSA ?
+  (e.g., RSA {{RSA}}, ECDSA {{ECDSA}}, EdDSA {{RFC8032}}) or a pre-shared key (PSK).
 
 - Confidentiality: Data sent through the channel after establishment
   is only visible to the
@@ -2136,7 +2134,7 @@ the last extension in the ClientHello.
 There MUST NOT be more than one extension of the same type in a given
 extension block.
 
-In TLS 1.3, unlike TLS 1.2, extensions are renegotiated with each
+In TLS 1.3, unlike TLS 1.2, extensions are negotiated for each
 handshake even when in resumption-PSK mode. However, 0-RTT parameters are
 those negotiated in the previous handshake; mismatches may require
 rejecting 0-RTT (see {{early-data-indication}}).
@@ -2148,7 +2146,7 @@ be taken into account when designing new extensions:
 
 - Some cases where a server does not agree to an extension are error
   conditions, and some are simply refusals to support particular features. In
-  general, error alerts should be used for the former, and a field in the
+  general, error alerts should be used for the former and a field in the
   server extension response for the latter.
 
 - Extensions should, as far as possible, be designed to prevent any attack that
@@ -2176,8 +2174,8 @@ supported versions in preference order, with the most preferred
 version first. Implementations of this specification MUST send this
 extension containing all versions of TLS which they are
 prepared to negotiate (for this specification, that means minimally
-0x0304, but if previous versions of TLS are supported, they MUST
-be present as well).
+0x0304, but if previous versions of TLS are allowed to be negotiated,
+they MUST be present as well).
 
 If this extension is not present, servers which are compliant with
 this specification MUST negotiate TLS 1.2 or prior as specified in
@@ -2247,11 +2245,9 @@ Clients MUST NOT use cookies in subsequent connections.
 The client uses the "signature_algorithms" extension to indicate to the server
 which signature algorithms may be used in digital signatures. Clients which
 desire the server to authenticate itself via a certificate MUST send this extension.
-If a server
-is authenticating via a certificate and the client has not sent a
+If a server is authenticating via a certificate and the client has not sent a
 "signature_algorithms" extension, then the server MUST
-abort the handshake with a "missing_extension" alert
-(see {{mti-extensions}}).
+abort the handshake with a "missing_extension" alert (see {{mti-extensions}}).
 
 The "extension_data" field of this extension in a ClientHello contains a
 SignatureSchemeList value:
@@ -2279,8 +2275,8 @@ SignatureSchemeList value:
            ed448(0x0808),
 
            /* Legacy algorithms */
-           rsa_pkcs1_sha1(0x0201),
-           ecdsa_sha1(0x0203),
+           rsa_pkcs1_sha1_RESERVED(0x0201),
+           ecdsa_sha1_RESERVED(0x0203),
 
            /* Reserved Code Points */
            obsolete_RESERVED(0x0000..0x0200),
@@ -2380,7 +2376,7 @@ willing to negotiate TLS 1.2 MUST behave in accordance with the requirements of
   any curve that they advertised in the "supported_groups" extension.
 
 * Implementations that advertise support for RSASSA-PSS (which is mandatory in
-  TLS 1.3), MUST be prepared to accept a signature using that scheme even when
+  TLS 1.3) MUST be prepared to accept a signature using that scheme even when
   TLS 1.2 is negotiated. In TLS 1.2, RSASSA-PSS is used with RSA cipher suites.
 
 
@@ -2415,14 +2411,16 @@ message. The server MAY send it in the CertificateRequest message.
 The "trusted_ca_keys" extension, which serves a similar
 purpose {{RFC6066}}, but is more complicated, is not used in TLS 1.3
 (although it may appear in ClientHello messages from clients which are
-offering prior versions of TLS).
+offering prior versions of TLS). If this extension is found in a ClientHello
+requiring a minimal version of TLS 1.3, the server MUST abort the connection with
+an "unsupported_extension" alert.
 
 
 #### OID Filters
 
 The "oid_filters" extension allows servers to provide a set of OID/value
 pairs which it would like the client's certificate to match. This
-extension MUST only be sent in the CertificateRequest message.
+extension, if provided by the server, MUST only be sent in the CertificateRequest message.
 
 %%% Server Parameters Messages
 
@@ -2437,7 +2435,7 @@ extension MUST only be sent in the CertificateRequest message.
 
 filters
 
-: A list of certificate extension OIDs {{RFC5280}} with their allowed values,
+: A list of certificate extension OIDs {{RFC5280}} with their allowed values and
   represented in DER-encoded {{X690}} format. Some certificate extension OIDs
   allow multiple values (e.g., Extended Key Usage).  If the server has included
   a non-empty certificate_extensions list, the client certificate included in
@@ -2537,16 +2535,17 @@ Items in named_group_list are ordered according to the client's
 preferences (most preferred choice first).
 
 As of TLS 1.3, servers are permitted to send the "supported_groups"
-extension to the client. If the server has a group it prefers to the
+extension to the client. Clients MUST NOT act upon any information
+found in "supported_groups" prior to successful completion of the
+handshake but MAY use the information learned from a successfully
+completed handshake to change what groups they use in their
+"key_share" extension in subsequent connections.
+If the server has a group it prefers to the
 ones in the "key_share" extension but is still willing to accept the
 ClientHello, it SHOULD send "supported_groups" to update the client's
 view of its preferences; this extension SHOULD contain all groups
 the server supports, regardless of whether they are currently
-supported by the client. Clients MUST NOT act upon any information
-found in "supported_groups" prior to successful completion of the
-handshake, but MAY use the information learned from a successfully
-completed handshake to change what groups they use in their
-"key_share" extension in subsequent connections.
+supported by the client.
 
 
 ### Key Share
@@ -2613,7 +2612,7 @@ server_share
   client's shares.
 {:br }
 
-Clients offer an arbitrary number of KeyShareEntry values, each
+Clients can offer an arbitrary number of KeyShareEntry values, each
 representing a single set of key exchange parameters. For instance, a
 client might offer shares for several elliptic curves or multiple
 FFDHE groups.  The key_exchange values for each KeyShareEntry MUST be
@@ -2621,8 +2620,8 @@ generated independently.  Clients MUST NOT offer multiple
 KeyShareEntry values for the same group.  Clients MUST NOT offer any
 KeyShareEntry values for groups not listed in the client's
 "supported_groups" extension.  Servers MAY check for violations of
-these rules and abort the handshake with an
-"illegal_parameter" alert if one is violated.
+these rules and abort the handshake with an "illegal_parameter" alert
+if one is violated.
 
 Upon receipt of this extension in a HelloRetryRequest, the client MUST
 verify that (1) the selected_group field corresponds to a group which was provided
@@ -2713,7 +2712,8 @@ might supply via NewSessionTicket.
 
 A client MUST provide a "psk_key_exchange_modes" extension if it offers
 a "pre_shared_key" extension. If clients offer "pre_shared_key" without
-a "psk_key_exchange_modes" extension, servers MUST abort the handshake.
+a "psk_key_exchange_modes" extension, servers MUST abort the handshake
+with an "illegal_parameter" alert.
 Servers MUST NOT select a key exchange mode that is not listed by the
 client. This extension also restricts the modes for use with PSK resumption;
 servers SHOULD NOT send NewSessionTicket with tickets that are not
@@ -2744,7 +2744,7 @@ in {{key-share}}.
 
 When a PSK is used, the client can send application data
 in its first flight of messages. If the client opts to do so, it MUST
-supply an "early_data" extension as well as the "pre_shared_key"
+supply both the "early_data" extension as well as the "pre_shared_key"
 extension.
 
 The "extension_data" field of this extension contains an
