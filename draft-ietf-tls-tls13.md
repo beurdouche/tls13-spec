@@ -2884,15 +2884,15 @@ The "extension_data" field of this extension contains a
 
 identity
 : A label for a key. For instance, a ticket defined
-  in {{ticket-establishment}}, or a label for a pre-shared key
+  in {{ticket-establishment}} or a label for a pre-shared key
   established externally.
 
 obfuscated_ticket_age
 : An obfuscated version of the age of the key.
-{{ticket-age}} describes how to form this value
-for identities established via the NewSessionTicket message.
-For identities established externally an obfuscated_ticket_age of 0
-SHOULD be used, and servers MUST ignore the value.
+  {{ticket-age}} describes how to form this value
+  for identities established via the NewSessionTicket message.
+  For identities established externally an obfuscated_ticket_age of 0
+  SHOULD be used, and servers MUST ignore the value.
 
 identities
 : A list of the identities that the client is willing
@@ -2939,8 +2939,8 @@ range supplied by the client, that the server selected a cipher suite
 indicating a Hash associated with the PSK and that a server
 "key_share" extension is present if required by the
 ClientHello "psk_key_exchange_modes". If these values are not
-consistent
-the client MUST abort the handshake with an "illegal_parameter" alert.
+consistent the client MUST abort the handshake with an
+"illegal_parameter" alert.
 
 If the server supplies an "early_data" extension, the client MUST
 verify that the server's selected_identity is 0. If any
@@ -3184,15 +3184,15 @@ Based on these inputs, the messages then contain:
 
 Certificate
 : The certificate to be used for authentication, and any
-supporting certificates in the chain. Note that certificate-based
-client authentication is not available in the 0-RTT case.
+  supporting certificates in the chain. Note that certificate-based
+  client authentication is not available in 0-RTT mode.
 
 CertificateVerify
 : A signature over the value Transcript-Hash(Handshake Context, Certificate)
 
 Finished
 : A MAC over the value Transcript-Hash(Handshake Context, Certificate, CertificateVerify)
-using a MAC key derived from the base key.
+  using a MAC key derived from the base key.
 {:br}
 
 
@@ -3253,12 +3253,18 @@ The server MUST send a Certificate message whenever the agreed-upon
 key exchange method uses certificates for authentication (this
 includes all key exchange methods defined in this document except PSK).
 
-The client MUST send a Certificate message if and only if the server has
-requested client authentication via a CertificateRequest message
-({{certificate-request}}). If the server requests client authentication
+Thw client MUST send a Certificate message if the server has
+requested client authentication via a CertificateRequest message during
+the handshake phase. If the server requests client authentication
 but no suitable certificate is available, the client
 MUST send a Certificate message containing no certificates (i.e., with
 the "certificate_list" field having length 0).
+The client SHOULD send a Certificate message if the server has
+requested client authentication after the end of the handshake.
+
+The client MUST send a Certificate message if and only if the server has
+requested client authentication via a CertificateRequest message
+({{certificate-request}}).
 
 Structure of this message:
 
@@ -3282,9 +3288,9 @@ Structure of this message:
        } Certificate;
 
 certificate_request_context
-: If this message is in response to a CertificateRequest, the
-  value of certificate_request_context in that message. Otherwise
-  (in the case of server authentication), this field SHALL be zero length.
+: If this message is in response to a CertificateRequest, this field
+  contains the value of certificate_request_context in that message. Otherwise
+  (in the case of server authentication) this field SHALL be zero length.
 
 certificate_list
 : This is a sequence (chain) of CertificateEntry structures, each
@@ -3367,7 +3373,7 @@ The following rules apply to the certificates sent by the server:
 
 - The server's end-entity certificate's public key (and associated
   restrictions) MUST be compatible with the selected authentication
-  algorithm (currently RSA or ECDSA).
+  algorithm (currently RSA or ECDSA or EdDSA).
 
 - The certificate MUST allow the key to be used for signing (i.e., the
   digitalSignature bit MUST be set if the Key Usage extension is present) with
@@ -3388,9 +3394,10 @@ part of the chain and therefore MAY be signed with any algorithm.
 If the server cannot produce a certificate chain that is signed only via the
 indicated supported algorithms, then it SHOULD continue the handshake by sending
 the client a certificate chain of its choice that may include algorithms
-that are not known to be supported by the client. This fallback chain MAY
-use the deprecated SHA-1 hash algorithm only if the "signature_algorithms"
-extension provided by the client permits it.
+that are not known to be supported by the client.
+This fallback chain SHOULD NOT use the deprecated SHA-1 hash algorithm in general,
+but MAY if the "signature_algorithms" extension provided by the client permits it.
+
 If the client cannot construct an acceptable chain using the provided
 certificates and decides to abort the handshake, then it MUST abort the
 handshake with an appropriate certificate-related alert (by default,
@@ -3399,7 +3406,6 @@ handshake with an appropriate certificate-related alert (by default,
 If the server has multiple certificates, it chooses one of them based on the
 above-mentioned criteria (in addition to other criteria, such as transport
 layer endpoint, local configuration and preferences).
-
 
 #### Client Certificate Selection
 
@@ -3442,12 +3448,12 @@ handshake (considering the client unauthenticated) or abort the handshake.
 
 Any endpoint receiving any certificate signed using any signature algorithm
 using an MD5 hash MUST abort the handshake with a "bad_certificate" alert.
-SHA-1 is deprecated and it is RECOMMENDED that
-any endpoint receiving any certificate signed using any signature algorithm
-using a SHA-1 hash abort the handshake with a "bad_certificate" alert.
+SHA-1 is deprecated and it is RECOMMENDED that any endpoint receiving any
+certificate signed using any signature algorithm using a SHA-1 hash abort
+the handshake with a "bad_certificate" alert.
 All endpoints are RECOMMENDED to transition to SHA-256 or better as soon
 as possible to maintain interoperability with implementations
-currently in the process of phasing out SHA-1 support.
+currently in the process of removing support for SHA-1.
 
 Note that a certificate containing a key for one signature algorithm
 MAY be signed using a different signature algorithm (for instance,
@@ -3456,17 +3462,13 @@ an RSA key signed with an ECDSA key).
 
 ###  Certificate Verify
 
-
 This message is used to provide explicit proof that an endpoint
-possesses the private key corresponding to its certificate
-and also provides integrity for the handshake up
-to this point. Servers MUST send this message when
-authenticating via a certificate.
-Clients MUST send this
-message whenever authenticating via a certificate (i.e., when
+possesses the private key corresponding to its certificate.
+The CertificateVerify message also provides integrity for the handshake up
+to this point. Servers MUST send this message when authenticating via a certificate.
+Clients MUST send this message whenever authenticating via a certificate (i.e., when
 the Certificate message is non-empty). When sent, this message MUST appear immediately
-after the Certificate message and immediately prior to the Finished
-message.
+after the Certificate message and immediately prior to the Finished message.
 
 Structure of this message:
 
@@ -3499,10 +3501,10 @@ prefix (ClientHello.random). The initial 64-byte pad clears that prefix
 along with the server-controlled ServerHello.random.
 
 The context string for a server signature is
-"TLS 1.3, server CertificateVerify"
-and for a client signature is "TLS 1.3, client
-CertificateVerify". It is used to provide separation between signatures
-made in different contexts, helping against potential cross-protocol attacks.
+"TLS 1.3, server CertificateVerify" and for a client signature is
+"TLS 1.3, client CertificateVerify".
+It is used to provide separation between signatures made in different
+contexts, helping against potential cross-protocol attacks.
 
 For example, if the transcript hash was 32 bytes of
 01 (this length would make sense for SHA-256), the content covered by
@@ -3523,9 +3525,9 @@ CertificateVerify message takes as input:
   previous message
 
 If the CertificateVerify message is sent by a server, the signature
-algorithm MUST be one offered in the
-client's "signature_algorithms" extension unless no valid certificate chain can be
-produced without unsupported algorithms (see {{signature-algorithms}}).
+algorithm MUST be one offered in the client's "signature_algorithms" extension
+unless no valid certificate chain can be produced without unsupported
+algorithms (see {{signature-algorithms}}).
 
 If sent by a client, the signature algorithm used in the signature
 MUST be one of those present in the supported_signature_algorithms
@@ -3534,13 +3536,14 @@ field of the "signature_algorithms" extension in the CertificateRequest message.
 In addition, the signature algorithm MUST be compatible with the key
 in the sender's end-entity certificate. RSA signatures MUST use an
 RSASSA-PSS algorithm, regardless of whether RSASSA-PKCS1-v1_5 algorithms
-appear in "signature_algorithms". SHA-1 MUST NOT be used in any signatures in
-CertificateVerify. All SHA-1 signature algorithms in this specification are
-defined solely for use in legacy certificates, and are not valid for
-CertificateVerify signatures.
+appear in "signature_algorithms". The SHA-1 algorithm MUST NOT be used
+in any signatures of CertificateVerify messages.
+All SHA-1 signature algorithms in this specification are defined solely
+for use in legacy certificates and are not valid for CertificateVerify
+signatures.
 
-The receiver of a CertificateVerify message MUST verify the signature field. The
-verification process takes as input:
+The receiver of a CertificateVerify message MUST verify the signature field.
+The verification process takes as input:
 
 - The content covered by the digital signature
 - The public key contained in the end-entity certificate found in the
@@ -3565,7 +3568,8 @@ Once a side has sent its Finished message and received and
 validated the Finished message from its peer, it may begin to send and
 receive application data over the connection.
 Early data may be sent prior to the receipt of the peer's Finished
-message, per {{early-data-indication}}.
+message, per {{early-data-indication}} but will not be authenticated
+before the handshake both Finished messages have been accepted.
 
 The key used to compute the finished message is computed from the
 Base key defined in {{authentication-messages}} using HKDF (see
@@ -3594,13 +3598,12 @@ The verify_data value is computed as follows:
 
        * Only included if present.
 
-Where HMAC {{RFC2104}} uses the Hash algorithm for the handshake.
+The HMAC algorithm {{RFC2104}} uses the Hash algorithm for the handshake.
 As noted above, the HMAC input can generally be implemented by a running
 hash, i.e., just the handshake hash at this point.
 
 In previous versions of TLS, the verify_data was always 12 octets long. In
-TLS 1.3, it is the size of the HMAC output for the
-Hash used for the handshake.
+TLS 1.3, it is the size of the HMAC output for the Hash used for the handshake.
 
 Note: Alerts and any other record types are not handshake messages
 and are not included in the hash computations.
@@ -3621,11 +3624,10 @@ EndOfEarlyData message after receiving the server Finished.  If the server does
 not send an "early_data" extension, then the client MUST NOT send an
 EndOfEarlyData message. This message indicates that all
 0-RTT application_data messages, if any, have been transmitted and
-that the following records are protected
-under handshake traffic keys. Servers MUST NOT send this
-message and clients receiving it MUST terminate the connection
-with an "unexpected_message" alert. This message is encrypted
-under keys derived from the client_early_traffic_secret.
+that the following records are protected under handshake traffic keys.
+Servers MUST NOT send this message and clients receiving it
+MUST terminate the connection with an "unexpected_message" alert.
+This message is encrypted under keys derived from the client_early_traffic_secret.
 
 ## Post-Handshake Messages
 
@@ -3644,8 +3646,8 @@ The client MAY use this PSK for future handshakes by including the
 ticket value in the "pre_shared_key" extension in its ClientHello
 ({{pre-shared-key-extension}}). Servers MAY send multiple tickets on a
 single connection, either immediately after each other or
-after specific events. For instance, the server might send
-a new ticket after post-handshake
+after specific events.
+For instance, the server might send a new ticket after post-handshake
 authentication in order to encapsulate the additional client
 authentication state. Clients SHOULD attempt to use each
 ticket no more than once, with more recent tickets being used
@@ -3679,7 +3681,7 @@ handshake, for example.
 ticket_lifetime
 : Indicates the lifetime in seconds as a 32-bit unsigned integer in
   network byte order from the time of ticket issuance.
-  Servers MUST NOT use any value more than 604800 seconds (7 days).
+  Servers MUST NOT use any value superior to 604800 seconds (7 days).
   The value of zero indicates that the ticket should be discarded
   immediately. Clients MUST NOT cache tickets for longer than
   7 days, regardless of the ticket_lifetime, and MAY delete the ticket
@@ -3691,17 +3693,17 @@ ticket_age_add
 : A securely generated, random 32-bit value that is used to obscure the age of
   the ticket that the client includes in the "pre_shared_key" extension.
   The client-side ticket age is added to this value modulo 2^32 to
-  obtain the value that is transmitted by the client. The server MUST
-  generate a fresh value for each ticket it sends.
+  obtain the value that is transmitted by the client.
+  The server MUST generate a fresh value for each ticket it sends.
 
 ticket_nonce
 : A unique per-ticket value.
 
 ticket
 : The value of the ticket to be used as the PSK identity.
-The ticket itself is an opaque label. It MAY either be a database
-lookup key or a self-encrypted and self-authenticated value. Section
-4 of {{RFC5077}} describes a recommended ticket construction mechanism.
+  The ticket itself is an opaque label. It MAY either be a database
+  lookup key or a self-encrypted and self-authenticated value. Section
+  4 of {{RFC5077}} describes a recommended ticket construction mechanism.
 
 extensions
 : A set of extension values for the ticket. The "Extension"
@@ -3734,7 +3736,7 @@ The PSK associated with the ticket is computed as:
 Because the ticket_nonce value is distinct for each NewSessionTicket
 message, a different PSK will be derived for each ticket.
 
-Note that in principle it is possible to continue issuing new tickets
+Note that it is possible, in principle, to continue issuing new tickets
 which indefinitely extend the lifetime of the keying
 material originally derived from an initial non-PSK handshake (which
 was most likely tied to the peer's certificate). It is RECOMMENDED
@@ -3761,7 +3763,7 @@ alert.
 
 Note: Because client authentication could involve prompting the user, servers
 MUST be prepared for some delay, including receiving an arbitrary number of
-other messages between sending the CertificateRequest and receiving a
+other Application Data messages between sending the CertificateRequest and receiving a
 response. In addition, clients which receive multiple CertificateRequests in
 close succession MAY respond to them in a different order than they were
 received (the certificate_request_context value allows the server to
@@ -3783,29 +3785,27 @@ disambiguate the responses).
 
 request_update
 : Indicates whether the recipient of the KeyUpdate should respond with its
-own KeyUpdate. If an implementation receives any other value, it MUST
-terminate the connection with an "illegal_parameter" alert.
+  own KeyUpdate. If an implementation receives any other value, it MUST
+  terminate the connection with an "illegal_parameter" alert.
 {:br }
 
 The KeyUpdate handshake message is used to indicate that the sender is
 updating its sending cryptographic keys. This message can be sent by
 either peer after it has sent a Finished message.
-Implementations that receive a KeyUpdate message
-prior to receiving a Finished message
+Implementations that receive a KeyUpdate message prior to receiving a Finished message
 MUST terminate the connection with an "unexpected_message" alert.
 After sending a KeyUpdate message, the sender SHALL send all its traffic using the
-next generation of keys, computed as described in
-{{updating-traffic-keys}}. Upon receiving a KeyUpdate, the receiver
-MUST update its receiving keys.
+next generation of keys, computed as described in {{updating-traffic-keys}}.
+Upon receiving a KeyUpdate, the receiver MUST update its receiving keys.
 
 If the request_update field is set to "update_requested" then the receiver MUST
 send a KeyUpdate of its own with request_update set to "update_not_requested" prior
-to sending its next application data record. This mechanism allows either side to force an update to the
-entire connection, but causes an implementation which
-receives multiple KeyUpdates while it is silent to respond with
-a single update. Note that implementations may receive an arbitrary
-number of messages between sending a KeyUpdate with request_update set
-to update_requested and receiving the
+to sending its next application data record.
+This mechanism allows either side to force an update to the
+entire connection. If an implementation receives multiple
+KeyUpdates while it is silent, it MUST respond with a single update.
+Note that implementations may receive an arbitrary number of messages between
+sending a KeyUpdate with request_update set to update_requested and receiving the
 peer's KeyUpdate, because those messages may already be in flight.
 However, because send and receive keys are derived from independent
 traffic secrets, retaining the receive traffic secret does not threaten
