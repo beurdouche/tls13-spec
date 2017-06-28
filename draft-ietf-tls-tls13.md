@@ -967,17 +967,17 @@ draft-03
 
 draft-02
 
--  Increment version number.
+- Increment version number.
 
--  Rework handshake to provide 1-RTT mode.
+- Rework handshake to provide 1-RTT mode.
 
--  Remove custom DHE groups.
+- Remove custom DHE groups.
 
--  Remove support for compression.
+- Remove support for compression.
 
--  Remove support for static RSA and DH key exchange.
+- Remove support for static RSA and DH key exchange.
 
--  Remove support for non-AEAD ciphers.
+- Remove support for non-AEAD ciphers.
 
 
 ##  Major Differences from TLS 1.2
@@ -1732,17 +1732,20 @@ HelloRetryRequest, it indicates the selected parameters in the ServerHello as
 follows:
 
 - If PSK is being used, then the server will send a
-"pre_shared_key" extension indicating the selected key.
+  "pre_shared_key" extension indicating the selected key.
+
 - If PSK is not being used, then (EC)DHE and certificate-based
-authentication are always used.
+  authentication are always used.
+
 - When (EC)DHE is in use, the server will also provide a
-"key_share" extension.
+  "key_share" extension.
+
 - When authenticating via a certificate, the server will send
-the Certificate ({{certificate}}) and CertificateVerify
-({{certificate-verify}}) messages. In TLS 1.3
-as defined by this document, either a PSK or a certificate
-is always used, but not both. Future documents may define how to use them
-together.
+  the Certificate ({{certificate}}) and CertificateVerify
+  ({{certificate-verify}}) messages. In TLS 1.3
+  as defined by this document, either a PSK or a certificate
+  is always used, but not both. Future documents may define how
+  to use them together.
 
 If the server is unable to negotiate a supported set of parameters
 (i.e., there is no overlap between the client and server parameters),
@@ -2076,9 +2079,9 @@ A number of TLS messages contain tag-length-value encoded extensions structures.
 
 Here:
 
--  "extension_type" identifies the particular extension type.
+- "extension_type" identifies the particular extension type.
 
--  "extension_data" contains information specific to the particular
+- "extension_data" contains information specific to the particular
   extension type.
 
 The list of extension types is maintained by IANA as described in
@@ -4726,7 +4729,7 @@ A TLS-compliant application MUST support digital signatures with
 rsa_pkcs1_sha256 (for certificates), rsa_pss_sha256 (for
 CertificateVerify and certificates) and ecdsa_secp256r1_sha256.
 A TLS-compliant application SHOULD support digital signatures with
-eddsa_curve25519 {{RFC8032}}.
+ed25519 {{RFC8032}}.
 
 TLS-compliant application MUST support key exchange with secp256r1
 (NIST P-256) and SHOULD support key exchange with X25519 {{RFC7748}}.
@@ -4789,7 +4792,7 @@ This document uses several registries that were originally created in
 {{RFC4346}}. IANA has updated these to reference this document.
 The registries and their allocation policies are below:
 
-- TLS Cipher Suite Registry: Values with the first byte in the range
+- TLS Cipher Suite Registry: values with the first byte in the range
   0-254 (decimal) are assigned via Specification Required {{RFC5226}}.
   Values with the first byte 255 (decimal) are reserved for Private
   Use {{RFC5226}}.
@@ -4800,14 +4803,14 @@ The registries and their allocation policies are below:
   cipher suite. \[\[This assumes {{?I-D.ietf-tls-iana-registry-updates}} has been
   applied.]]
 
--  TLS ContentType Registry: Future values are allocated via
+- TLS ContentType Registry: Future values are allocated via
   Standards Action {{RFC5226}}.
 
--  TLS Alert Registry: Future values are allocated via Standards
+- TLS Alert Registry: Future values are allocated via Standards
   Action {{RFC5226}}. IANA \[SHALL update/has updated] this registry
   to include values for "missing_extension" and "certificate_required".
 
--  TLS HandshakeType Registry: Future values are allocated via
+- TLS HandshakeType Registry: Future values are allocated via
   Standards Action {{RFC5226}}. IANA \[SHALL update/has updated] this registry
   to rename item 4 from "NewSessionTicket" to "new_session_ticket"
   and to add the "hello_retry_request", "encrypted_extensions",
@@ -4817,23 +4820,23 @@ This document also uses the TLS ExtensionType Registry originally created in
 {{RFC4366}}. IANA has updated it to reference this document. The registry and
 its allocation policy is listed below:
 
--  IANA \[SHALL update/has updated] this registry to include the
-   "key_share", "pre_shared_key", "psk_key_exchange_modes",
-   "early_data", "cookie", "supported_versions",
-   "certificate_authorities", "oid_filters", and "post_handshake_auth"
-   extensions with the values defined in this document and the Recommended value of "Yes".
+- IANA \[SHALL update/has updated] this registry to include the
+  "key_share", "pre_shared_key", "psk_key_exchange_modes",
+  "early_data", "cookie", "supported_versions",
+  "certificate_authorities", "oid_filters", and "post_handshake_auth"
+  extensions with the values defined in this document and the Recommended value of "Yes".
 
--  IANA \[SHALL update/has updated] this registry to include a "TLS
-   1.3" column which lists the messages in which the extension may
-   appear. This column \[SHALL be/has been]
-   initially populated from the table in {{extensions}}
-   with any extension not listed there marked as "-" to indicate that
-   it is not used by TLS 1.3.
+- IANA \[SHALL update/has updated] this registry to include a "TLS
+  1.3" column which lists the messages in which the extension may
+  appear. This column \[SHALL be/has been]
+  initially populated from the table in {{extensions}}
+  with any extension not listed there marked as "-" to indicate that
+  it is not used by TLS 1.3.
 
 In addition, this document defines a new registry to be maintained
 by IANA:
 
--  TLS SignatureScheme Registry: Values with the first byte in the range
+- TLS SignatureScheme Registry: Values with the first byte in the range
   0-254 (decimal) are assigned via Specification Required {{RFC5226}}.
   Values with the first byte 255 (decimal) are reserved for Private
   Use {{RFC5226}}. Values with the first byte in the range 0-6 or with the
@@ -4846,6 +4849,7 @@ by IANA:
   rsa_pss_sha256, rsa_pss_sha384, rsa_pss_sha512, ed25519.
 
 --- back
+
 
 # State Machine
 
@@ -5014,20 +5018,20 @@ provides several recommendations to assist implementors.
 ## API considerations for 0-RTT
 
 0-RTT data has very different security properties from data
-transmitted after a completed handshake: it can be
-replayed. Implementations SHOULD provide different functions for
+transmitted after a completed handshake: it can be replayed.
+Implementations SHOULD provide different functions for
 reading and writing 0-RTT data and data transmitted after the
-handshake, and SHOULD NOT automatically resend 0-RTT data if it is
-rejected by the server.
+handshake. Implementations SHOULD NOT automatically resend 0-RTT data
+and MUST NOT resend 0-RTT data if it is rejected by the server.
 
 
 ## Random Number Generation and Seeding
 
-TLS requires a cryptographically secure pseudorandom number generator (PRNG).
+TLS requires a cryptographically secure pseudorandom number generator (CSPRNG).
 In most cases, the operating system provides an appropriate facility such
 as /dev/urandom, which should be used absent other (performance) concerns.
-It is generally preferable to use an existing PRNG implementation in
-preference to crafting a new one, and many adequate cryptographic libraries
+It is strongly recommended to use an existing PRNG implementation in
+preference to crafting a new one. Many adequate cryptographic libraries
 are already available under favorable license terms.  Should those prove
 unsatisfactory, {{RFC4086}} provides guidance on the generation of random values.
 
@@ -5048,33 +5052,33 @@ certification paths containing keys or signatures weaker than 2048-bit RSA or
 ## Implementation Pitfalls
 
 Implementation experience has shown that certain parts of earlier TLS
-specifications are not easy to understand, and have been a source of
+specifications are not easy to understand and have been a source of
 interoperability and security problems. Many of these areas have been clarified
-in this document, but this appendix contains a short list of the most important
+in this document but this appendix contains a short list of the most important
 things that require special attention from implementors.
 
 TLS protocol issues:
 
--  Do you correctly handle handshake messages that are fragmented to
+- Do you correctly handle handshake messages that are fragmented to
   multiple TLS records (see {{record-layer}})? Including corner cases
   like a ClientHello that is split to several small fragments? Do
   you fragment handshake messages that exceed the maximum fragment
   size? In particular, the Certificate and CertificateRequest
   handshake messages can be large enough to require fragmentation.
 
--  Do you ignore the TLS record layer version number in all unencrypted TLS
+- Do you ignore the TLS record layer version number in all unencrypted TLS
   records? (see {{backward-compatibility}})
 
--  Have you ensured that all support for SSL, RC4, EXPORT ciphers, and
+- Have you ensured that all support for SSL, RC4, EXPORT ciphers, and
   MD5 (via the "signature_algorithms" extension) is completely removed from
   all possible configurations that support TLS 1.3 or later, and that
   attempts to use these obsolete capabilities fail correctly?
   (see {{backward-compatibility}})
 
--  Do you handle TLS extensions in ClientHello correctly, including
+- Do you handle TLS extensions in ClientHello correctly, including
   unknown extensions?
 
--  When the server has requested a client certificate, but no
+- When the server has requested a client certificate, but no
   suitable certificate is available, do you correctly send an empty
   Certificate message, instead of omitting the whole message (see
   {{client-certificate-selection}})?
@@ -5098,12 +5102,12 @@ TLS protocol issues:
 
 Cryptographic details:
 
--  What countermeasures do you use to prevent timing attacks {{TIMING}}?
+- What countermeasures do you use to prevent timing attacks {{TIMING}}?
 
--  When using Diffie-Hellman key exchange, do you correctly preserve
+- When using Diffie-Hellman key exchange, do you correctly preserve
   leading zero bytes in the negotiated key (see {{finite-field-diffie-hellman}})?
 
--  Does your TLS client check that the Diffie-Hellman parameters sent
+- Does your TLS client check that the Diffie-Hellman parameters sent
   by the server are acceptable, (see {{ffdhe-param}})?
 
 - Do you use a strong and, most importantly, properly seeded random number
@@ -5166,8 +5170,8 @@ in the server.
 Prior versions of TLS used the record layer version number for various
 purposes. (TLSPlaintext.legacy_record_version and TLSCiphertext.legacy_record_version)
 As of TLS 1.3, this field is deprecated. The value of
-TLSPlaintext.legacy_record_version MUST be ignored by all
-implementations. The value of TLSCiphertext.legacy_record_version MAY be ignored,
+TLSPlaintext.legacy_record_version MUST be ignored by all implementations.
+The value of TLSCiphertext.legacy_record_version MAY be ignored
 or MAY be validated to match the fixed constant value.
 Version negotiation is performed using only the handshake versions
 (ClientHello.legacy_version,
@@ -5225,10 +5229,9 @@ than its highest supported version. If the "supported_versions" extension
 is present, the server MUST negotiate using that extension as described in
 {{supported-versions}}. If the "supported_versions" extension is not
 present, the server MUST negotiate the minimum of ClientHello.legacy_version
-and TLS 1.2. For example, if
-the server supports TLS 1.0, 1.1, and 1.2, and legacy_version is TLS 1.0, the
-server will proceed with a TLS 1.0 ServerHello. If the "supported_versions"
-extension is absent and the server only supports
+and TLS 1.2. For example, if the server supports TLS 1.0, 1.1, and 1.2,
+and legacy_version is TLS 1.0, the server will proceed with a TLS 1.0 ServerHello.
+If the "supported_versions" extension is absent and the server only supports
 versions greater than ClientHello.legacy_version, the server MUST abort the handshake
 with a "protocol_version" alert.
 
@@ -5317,62 +5320,62 @@ of the handshake, each side outputs its view of the following values:
 - A set of cryptographic parameters (algorithms, etc.)
 - The identities of the communicating parties.
 
-We assume that the attacker has complete control of the network in
-between the parties {{RFC3552}}. Even under these conditions, the
-handshake should provide the properties listed below. Note that
-these properties are not necessarily independent, but reflect
+We assume the attacker to be an active network attacker, this means it
+has complete control over the network used to communicate between the parties {{RFC3552}}.
+Even under these conditions, the handshake should provide the properties listed below.
+Note that these properties are not necessarily independent, but reflect
 the protocol consumers' needs.
 
 Establishing the same session keys.
 : The handshake needs to output the same set of session keys on both sides of
-the handshake, provided that it completes successfully on each endpoint
-(See {{CK01}}; defn 1, part 1).
+  the handshake provided that it completes successfully on each endpoint
+  (See {{CK01}}; defn 1, part 1).
 
 Secrecy of the session keys.
 : The shared session keys should be known only to the communicating
-parties, not to the attacker (See {{CK01}}; defn 1, part 2).  Note that
-in a unilaterally authenticated connection, the attacker can establish
-its own session keys with the server, but those session keys are
-distinct from those established by the client.
+  parties and not to the attacker (See {{CK01}}; defn 1, part 2).
+  Note that in a unilaterally authenticated connection, the attacker can establish
+  its own session keys with the server, but those session keys are distinct from
+  those established by the client.
 
 Peer Authentication.
 : The client's view of the peer identity should reflect the server's
-identity. If the client is authenticated, the server's view of the
-peer identity should match the client's identity.
+  identity. If the client is authenticated, the server's view of the
+  peer identity should match the client's identity.
 
 Uniqueness of the session keys:
 : Any two distinct handshakes should produce distinct, unrelated session
-keys. Individual session keys produced by a handshake should also be distinct
-and unrelated.
+  keys. Individual session keys produced by a handshake should also be distinct
+  and unrelated.
 
 Downgrade protection.
 : The cryptographic parameters should be the same on both sides and
-should be the same as if the peers had been communicating in the
-absence of an attack (See {{BBFKZG16}}; defns 8 and 9}).
+  should be the same as if the peers had been communicating in the
+  absence of an attack (See {{BBFKZG16}}; defns 8 and 9}).
 
 Forward secret with respect to long-term keys
 : If the long-term keying material (in this case the signature keys in certificate-based
-authentication modes or the external/resumption PSK in PSK with (EC)DHE modes) is compromised after
-the handshake is complete, this does not compromise the security of the
-session key (See {{DOW92}}), as long as the session key itself has
-been erased. The forward secrecy property is not satisfied
-when PSK is used in the "psk_ke" PskKeyExchangeMode.
+  authentication modes or the external/resumption PSK in PSK with (EC)DHE modes) is compromised after
+  the handshake is complete, this does not compromise the security of the
+  session key (See {{DOW92}}), as long as the session key itself has
+  been erased. The forward secrecy property is not satisfied
+  when PSK is used in the "psk_ke" PskKeyExchangeMode.
 
 Key Compromise Impersonation (KCI) resistance
 : In a mutually-authenticated connection with certificates, peer authentication
-should hold even if the local long-term secret was compromised before the
-connection was established (see {{HGFS15}}). For example, if a client's
-signature key is compromised, it should not be possible to impersonate
-arbitrary servers to that client in subsequent handshakes.
+   should hold even if the local long-term secret was compromised before the
+   connection was established (see {{HGFS15}}). For example, if a client's
+   signature key is compromised, it should not be possible to impersonate
+   arbitrary servers to that client in subsequent handshakes.
 
 Protection of endpoint identities.
 : The server's identity (certificate) should be protected against passive
-attackers. The client's identity should be protected against both passive
-and active attackers.
+  attackers. The client's identity should be protected against both passive
+  and active attackers.
 {:br}
 
 Informally, the signature-based modes of TLS 1.3 provide for the
-establishment of a unique, secret, shared, key established by an
+establishment of a unique, secret, shared key established by an
 (EC)DHE key exchange and authenticated by the server's signature over
 the handshake transcript, as well as tied to the server's identity by
 a MAC. If the client is authenticated by a certificate, it also signs
@@ -5494,10 +5497,10 @@ that the traffic key has not been compromised).
 
 ### 0-RTT
 
-The 0-RTT mode of operation generally provides the same security
+The 0-RTT mode of operation generally provides similar security
 properties as 1-RTT data, with the two exceptions that the 0-RTT
-encryption keys do not provide full forward secrecy and that the
-server is not able to guarantee full uniqueness of the handshake
+encryption keys do not provide perfect forward secrecy and that the
+server is not able to guarantee uniqueness of the handshake
 (non-replayability) without keeping potentially undue amounts of
 state. See {{early-data-indication}} for one mechanism to limit
 the exposure to replay.
@@ -5521,7 +5524,7 @@ needed again.
 TLS does not provide security for handshakes which take place after the peer's
 long-term secret (signature key or external PSK) is compromised. It therefore
 does not provide post-compromise security {{CCG16}}, sometimes also referred to
-as backwards or future security. This is in contrast to KCI resistance, which
+as backwards or future secrecy. This is in contrast to KCI resistance, which
 describes the security guarantees that a party has after its own long-term
 secret has been compromised.
 
@@ -5535,25 +5538,25 @@ TLS handshake: {{DFGS15}} {{CHSV16}} {{DFGS16}} {{KW16}} {{Kraw16}} {{FGSW16}}
 ## Record Layer {#security-record-layer}
 
 The record layer depends on the handshake producing strong traffic secrets
-which can be used to derive bidirectional encryption keys and nonces.
-Assuming that is true, and the keys are used for no more data than
-indicated in {{limits-on-key-usage}} then the record layer should provide the following
+to be able to derive bidirectional encryption keys and nonces.
+Assuming that this is true and that the keys are used for no more data than
+indicated in {{limits-on-key-usage}}, then the record layer should provide the following
 guarantees:
 
 Confidentiality.
 : An attacker should not be able to determine the plaintext contents
-of a given record.
+  of a given record.
 {::comment}Cite IND-CPA?{:/comment}
 
 Integrity.
 : An attacker should not be able to craft a new record which is
-different from an existing record which will be accepted by the receiver.
+  different from an existing record which will be accepted by the receiver.
 {::comment}Cite INT-CTXT?{:/comment}
 
 Order protection/non-replayability
 : An attacker should not be able to cause the receiver to accept a
-record which it has already accepted or cause the receiver to accept
-record N+1 without having first processed record N.
+  record which it has already accepted or cause the receiver to accept
+  record N+1 without having first processed record N.
 
 Length concealment.
 : Given a record with a given external length, the attacker should not be able
@@ -5561,8 +5564,8 @@ to determine the amount of the record that is content versus padding.
 
 Forward secrecy after key change.
 : If the traffic key update mechanism described in {{key-update}} has been
-used and the previous generation key is deleted, an attacker who compromises
-the endpoint should not be able to decrypt traffic encrypted with the old key.
+  used and the previous generation key is deleted, an attacker who compromises
+  the endpoint should not be able to decrypt traffic encrypted with the old key.
 {:br}
 
 Informally, TLS 1.3 provides these properties by AEAD-protecting the
@@ -5642,19 +5645,19 @@ cryptographic primitives. However, certain features of TLS are
 designed to make it easier to write side-channel resistant code:
 
 - Unlike previous versions of TLS which used a composite
-MAC-then-encrypt structure, TLS 1.3 only uses AEAD algorithms,
-allowing implementations to use self-contained constant-time
-implementations of those primitives.
+  MAC-then-encrypt structure, TLS 1.3 only uses AEAD algorithms,
+  allowing implementations to use self-contained constant-time
+  implementations of those primitives.
 
 - TLS uses a uniform "bad_record_mac" alert for all decryption
-errors, which is intended to prevent an attacker from gaining
-piecewise insight into portions of the message.  Additional resistance
-is provided by terminating the connection on such errors; a new
-connection will have different cryptographic material, preventing
-attacks against the cryptographic primitives that require multiple
-trials.
+  errors, which is intended to prevent an attacker from gaining
+  piecewise insight into portions of the message.  Additional resistance
+  is provided by terminating the connection on such errors; a new
+  connection will have different cryptographic material, preventing
+  attacks against the cryptographic primitives that require multiple
+  trials.
 
-Information leakage through side channels can occur at layers above
+Information leakage through side channels can occur at layers, above
 TLS, in application protocols and the applications that use
 them. Resistance to side-channel attacks depends on applications and
 application protocols separately ensuring that confidential
