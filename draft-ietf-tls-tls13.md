@@ -3254,7 +3254,7 @@ The server MUST send a Certificate message whenever the agreed-upon
 key exchange method uses certificates for authentication (this
 includes all key exchange methods defined in this document except PSK).
 
-Thw client MUST send a Certificate message if the server has
+The client MUST send a Certificate message if the server has
 requested client authentication via a CertificateRequest message during
 the handshake phase. If the server requests client authentication
 but no suitable certificate is available, the client
